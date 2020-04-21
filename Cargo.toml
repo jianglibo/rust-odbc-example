@@ -1,0 +1,11 @@
+[package]
+name = "rust-odbc-example"
+version = "0.1.0"
+authors = ["jianglibo <jianglibo@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+odbc = "0.16.1"
+env_logger = "0.7.1"
