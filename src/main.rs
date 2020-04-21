@@ -1,3 +1,71 @@
+#[macro_use]
+extern crate failure;
+
+#[macro_use]
+extern crate clap;
+
+extern crate env_logger;
+extern crate odbc;
+use log::*;
+use clap::App;
+use clap::ArgMatches;
+use std::env;
+
+fn main() {
+    if let Err(err) = main_1() {
+        error!("counter error: {:?}", err);
+    }
+}
+
+/// we change mini_app_conf value here.
+fn main_1() -> Result<(), failure::Error> {
+    println!("current_dir: {:?}", env::current_dir()?);
+    let mut log4rs_file = env::current_dir()?.join("log4rs.yaml");
+    let exec_path = std::env::current_exe()?;
+    let exec_dir = exec_path.parent().expect("exec_dir failed.");
+    env::set_current_dir(&exec_dir)?;
+
+    if exec_dir.join("log4rs.yaml").exists() {
+        log4rs_file = exec_dir.join("log4rs.yaml");
+    }
+
+    log4rs::init_file(log4rs_file, Default::default())
+        .unwrap_or_else(|_| panic!("fail to find log4rs.yaml in {:?}", exec_dir));
+    let yml = load_yaml!("17_yaml.yml");
+    let app = App::from_yaml(yml);
+
+    let m: ArgMatches = app.get_matches();
+
+    match m.subcommand() {
+        ("driver-datasource", Some(__sub_matches)) => {
+            print_drivers_and_datasources()?;
+        }
+        (_, _) => {
+            unimplemented!();
+        }
+    }
+    Ok(())
+}
+
+fn print_drivers_and_datasources() -> odbc::Result<()> {
+    let mut env = odbc::create_environment_v3().map_err(|e| e.unwrap())?;
+    println!("Driver list:");
+    for driver_info in env.drivers()? {
+        println!("\nDriver Name: {}", driver_info.description);
+        for (key, value) in driver_info.attributes {
+            println!("    {}={}", key, value);
+        }
+    }
+
+    println!("\nDataSource list:");
+    for ds in env.data_sources()? {
+        println!("    {}\n    {}\n\n", ds.server_name, ds.driver);
+    }
+    Ok(())
+}
+
+
+
 // extern crate odbc;
 // // Use this crate and set environmet variable RUST_LOG=odbc to see ODBC warnings
 // extern crate env_logger;
@@ -54,36 +122,3 @@
 
 //     Ok(())
 // }
-
-extern crate env_logger;
-extern crate odbc;
-use odbc::*;
-
-fn main() {
-
-    match print_drivers_and_datasources() {
-        Ok(()) => (),
-        Err(err) => println!("{}", err),
-    }
-}
-
-fn print_drivers_and_datasources() -> odbc::Result<()> {
-
-    env_logger::init();
-
-    let mut env = create_environment_v3().map_err(|e| e.unwrap())?;
-
-    println!("Driver list:");
-    for driver_info in env.drivers()? {
-        println!("\nDriver Name: {}", driver_info.description);
-        for (key, value) in driver_info.attributes {
-            println!("    {}={}", key, value);
-        }
-    }
-
-    println!("\nDataSource list:");
-    for ds in env.data_sources()? {
-        println!("    {}\n    {}\n\n", ds.server_name, ds.driver);
-    }
-    Ok(())
-}

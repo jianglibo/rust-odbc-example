@@ -1,0 +1,43 @@
+version: '3.6'
+services:
+  postgres:
+    image: postgres
+    restart: always
+    volumes:
+    - db_data:/var/lib/postgresql/data
+  graphql-engine:
+    image: hasura/graphql-engine:v1.1.0
+    ports:
+    - "8080:8080"
+    depends_on:
+    - "postgres"
+    restart: always
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:@postgres:5432/postgres
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true" # set to "false" to disable console
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
+      ## uncomment next line to set an admin secret
+      HASURA_GRAPHQL_ADMIN_SECRET: 00000132abc
+      HASURA_GRAPHQL_JWT_SECRET: ${HASURA_GRAPHQL_JWT_SECRET}
+      ## HASURA_GRAPHQL_JWT_SECRET: '{ "type": "HS256", "key": "f73ebd01-36f0-4ee6-9967-8813b1e05c16", "claims_format": "json"}'
+  c7-bk-dev:
+    image: jianglibo/c7-bk-dev
+    restart: always
+    ports:
+    - "2222:22"
+    - "8000:8000"
+    - "3000:3000"
+    depends_on:
+    - "graphql-engine"
+    volumes:
+    - vcpkg:/vcpkg
+    - rustup:/usr/local/rustup
+    - cargo:/usr/local/cargo
+    - root:/root
+volumes:
+  db_data:
+  rustup:
+  cargo:
+  vcpkg:
+  root:
+# docker-compose up -d
