@@ -6,9 +6,9 @@ extern crate clap;
 
 extern crate env_logger;
 extern crate odbc;
-use log::*;
 use clap::App;
 use clap::ArgMatches;
+use log::*;
 use std::env;
 
 fn main() {
@@ -64,7 +64,39 @@ fn print_drivers_and_datasources() -> odbc::Result<()> {
     Ok(())
 }
 
+// con = DriverManager.getConnection(this.jdbcUrl, this.user, this.password);
+// String sql = "{call sp_docList(?, ?)}";
+// callsta = con.prepareCall(sql);//收发文
+// callsta.setString(1, this.user);
+// callsta.registerOutParameter(2, oracle.jdbc.OracleTypes.CURSOR);
+// callsta.execute();
 
+fn call_stored_procedures() -> Result<(), failure::Error> {
+    let env = odbc::create_environment_v3().map_err(|e| e.unwrap())?;
+    let conn = env.connect("TestDataSource", "", "")?;
+    let stmt = odbc::Statement::with_parent(&conn)?;
+    let stmt = match stmt.exec_direct("CREATE TABLE STAGE (A TEXT, B TEXT);")? {
+        // Some drivers will return an empty result set. We need to close it before we can use
+        // statement again.
+        odbc::Data(stmt) => stmt.close_cursor()?,
+        odbc::NoData(stmt) => stmt,
+    };
+    let stmt = stmt.exec_direct("INSERT INTO STAGE (A, B) VALUES ('Hello', 'World');")?;
+
+    let env = odbc::create_environment_v3().map_err(|e| e.unwrap())?;
+    let conn = env.connect("TestDataSource", "", "")?;
+    let stmt = odbc::Statement::with_parent(&conn)?;
+    let param = 1968;
+    let stmt = stmt.bind_parameter(1, &param)?;
+    let sql_text = "SELECT TITLE FROM MOVIES WHERE YEAR = ?";
+    if let odbc::Data(mut stmt) = stmt.exec_direct(sql_text)? {
+        // ...
+    }
+
+    // odbc::ffi::InputOutput;
+
+    Ok(())
+}
 
 // extern crate odbc;
 // // Use this crate and set environmet variable RUST_LOG=odbc to see ODBC warnings
