@@ -20,6 +20,8 @@ select sys_context('userenv','instance_name') from dual;
 SELECT owner, table_name FROM all_tables;
 
 
+SELECT * FROM all_source WHERE name = 'SP_DOCLIST' ORDER BY TYPE, LINE;
+
 * PDB pluggable databases
 * SID The Oracle System ID (SID) is used to uniquely identify a particular database on a system
 
